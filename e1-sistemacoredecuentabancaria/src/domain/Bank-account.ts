@@ -1,58 +1,33 @@
 import { BussinesError } from "./errors";
-import type { Movement} from "./types";
+import type { Movement } from "./types";
 
 export class BankAccount {
-    private balance:number;
-    private movements:Movement[];
+  private balance: number;
+  private movements: Movement[];
 
-    constructor(initialBalance: number){
-        if(initialBalance<0){
-            throw new BussinesError("initial balance cannot be negative");
-        }
-        this.balance = initialBalance;
-        this.movements = [];
+  constructor(initialBalance: number) {
+    this.validateInitialBalance(initialBalance);
 
-        //registrar apertura
-        this.movements.push({
-            type: "OPEN",
-            amount: initialBalance,
-            balanceAfter: this.balance,
-            date: new Date(),
-        });
-    }
+    this.balance = initialBalance;
+    this.movements = [];
 
-    deposit(amount: number): void {
-    if (amount <= 0) {
-      throw new BussinesError("Deposit amount must be greater than 0");
-    }
-
-    this.balance += amount;
-
-    this.movements.push({
-      type: "DEPOSIT",
-      amount,
-      balanceAfter: this.balance,
-      date: new Date(),
-    });
+    // registrar apertura
+    this.registerMovement("OPEN", initialBalance);
   }
 
-   withdraw(amount: number): void {
-    if (amount <= 0) {
-      throw new BussinesError("Withdraw amount must be greater than 0");
-    }
+  deposit(amount: number): void {
+    this.validateAmount(amount);
 
-    if (amount > this.balance) {
-      throw new BussinesError("Insufficient funds");
-    }
+    this.balance += amount;
+    this.registerMovement("DEPOSIT", amount);
+  }
+
+  withdraw(amount: number): void {
+    this.validateAmount(amount);
+    this.validateSufficientFunds(amount);
 
     this.balance -= amount;
-
-    this.movements.push({
-      type: "WITHDRAW",
-      amount,
-      balanceAfter: this.balance,
-      date: new Date(),
-    });
+    this.registerMovement("WITHDRAW", amount);
   }
 
   getBalance(): number {
@@ -60,9 +35,34 @@ export class BankAccount {
   }
 
   getMovements(): Movement[] {
-    // Copia para que desde afuera no te modifiquen el historial
     return [...this.movements];
   }
-  
-}
 
+  //refactorización
+  private validateInitialBalance(initialBalance: number): void {
+    if (initialBalance < 0) {
+      throw new BussinesError("initial balance cannot be negative");
+    }
+  }
+
+  private validateAmount(amount: number): void {
+    if (amount <= 0) {
+      throw new BussinesError("Amount must be greater than 0");
+    }
+  }
+
+  private validateSufficientFunds(amount: number): void {
+    if (amount > this.balance) {
+      throw new BussinesError("Insufficient funds");
+    }
+  }
+
+  private registerMovement(type: Movement["type"], amount: number): void {
+    this.movements.push({
+      type,
+      amount,
+      balanceAfter: this.balance,
+      date: new Date(),
+    });
+  }
+}
